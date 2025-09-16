@@ -35,6 +35,7 @@ Polly-API/
 │   ├── routes.py
 │   └── schemas.py
 ├── client.py          # 🆕 Python client library
+├── demo.py            # 🆕 Interactive demo script
 ├── main.py
 ├── polls.db           # SQLite database (created automatically)
 ├── requirements.txt
@@ -340,25 +341,190 @@ while True:
     skip = result["pagination"]["next_skip"]
 ```
 
+## Quick Start Example
+
+Here's a complete example showing how to use the Polly-API client for a typical poll application workflow:
+
+```python
+#!/usr/bin/env python3
+"""
+Complete Polly-API Client Usage Example
+This demonstrates a full workflow from user registration to poll management.
+"""
+
+import json
+from client import (
+    register_user, login_user, create_poll, get_polls,
+    vote_on_poll, get_poll_results, delete_poll
+)
+
+def main():
+    print("🚀 Polly-API Client Demo")
+    print("=" * 50)
+
+    # Step 1: Register a new user
+    print("\n📝 Step 1: Registering new user...")
+    register_result = register_user("demo_user", "secure_password")
+
+    if not register_result["success"]:
+        print(f"❌ Registration failed: {register_result['message']}")
+        return
+
+    print(f"✅ {register_result['message']}")
+    print(f"   User ID: {register_result['data']['id']}")
+
+    # Step 2: Login to get authentication token
+    print("\n🔐 Step 2: Logging in...")
+    login_result = login_user("demo_user", "secure_password")
+
+    if not login_result["success"]:
+        print(f"❌ Login failed: {login_result['message']}")
+        return
+
+    token = login_result["data"]["access_token"]
+    print(f"✅ Login successful!")
+    print(f"   Token: {token[:20]}...")
+
+    # Step 3: Create a new poll
+    print("\n📊 Step 3: Creating a poll...")
+    poll_result = create_poll(
+        question="What's your favorite season?",
+        options=["Spring", "Summer", "Autumn", "Winter"],
+        token=token
+    )
+
+    if not poll_result["success"]:
+        print(f"❌ Poll creation failed: {poll_result['message']}")
+        return
+
+    poll_id = poll_result["data"]["id"]
+    print(f"✅ Poll created successfully!")
+    print(f"   Poll ID: {poll_id}")
+    print(f"   Question: {poll_result['data']['question']}")
+
+    # Step 4: Get all polls (including the new one)
+    print("\n📋 Step 4: Fetching all polls...")
+    polls_result = get_polls(limit=5)
+
+    if polls_result["success"]:
+        print(f"✅ Retrieved {polls_result['count']} polls")
+        for poll in polls_result["data"]:
+            print(f"   • Poll {poll['id']}: {poll['question']}")
+
+    # Step 5: Vote on the poll
+    print(f"\n🗳️  Step 5: Voting on poll {poll_id}...")
+    vote_result = vote_on_poll(
+        poll_id=poll_id,
+        option_id=poll_result["data"]["options"][0]["id"],  # Vote for first option
+        token=token
+    )
+
+    if vote_result["success"]:
+        print("✅ Vote recorded successfully!")
+    else:
+        print(f"❌ Voting failed: {vote_result['message']}")
+
+    # Step 6: Get poll results
+    print(f"\n📈 Step 6: Getting results for poll {poll_id}...")
+    results_result = get_poll_results(poll_id)
+
+    if results_result["success"]:
+        results = results_result["data"]
+        print(f"✅ Results for: {results['question']}")
+        print("   Current standings:")
+        for result in results["results"]:
+            print(f"   • {result['text']}: {result['vote_count']} votes")
+    else:
+        print(f"❌ Failed to get results: {results_result['message']}")
+
+    # Step 7: Clean up - delete the poll
+    print(f"\n🗑️  Step 7: Deleting poll {poll_id}...")
+    delete_result = delete_poll(poll_id, token)
+
+    if delete_result["success"]:
+        print("✅ Poll deleted successfully!")
+    else:
+        print(f"❌ Deletion failed: {delete_result['message']}")
+
+    print("\n🎉 Demo completed successfully!")
+
+if __name__ == "__main__":
+    main()
+```
+
+### Expected Output:
+```
+🚀 Polly-API Client Demo
+==================================================
+
+📝 Step 1: Registering new user...
+✅ User registered successfully
+   User ID: 1
+
+🔐 Step 2: Logging in...
+✅ Login successful!
+   Token: eyJhbGciOiJIUzI1NiIs...
+
+📊 Step 3: Creating a poll...
+✅ Poll created successfully!
+   Poll ID: 1
+   Question: What's your favorite season?
+
+📋 Step 4: Fetching all polls...
+✅ Retrieved 1 polls
+   • Poll 1: What's your favorite season?
+
+🗳️  Step 5: Voting on poll 1...
+✅ Vote recorded successfully!
+
+📈 Step 6: Getting results for poll 1...
+✅ Results for: What's your favorite season?
+   Current standings:
+   • Spring: 1 votes
+   • Summer: 0 votes
+   • Autumn: 0 votes
+   • Winter: 0 votes
+
+🗑️  Step 7: Deleting poll 1...
+✅ Poll deleted successfully!
+
+🎉 Demo completed successfully!
+```
+
 ## Testing the Client Library
 
-You can test the client library by running the built-in test examples:
+You can test the client library using multiple approaches:
 
+### Option 1: Interactive Demo Script
 ```bash
 # Make sure the server is running
 uvicorn main:app --reload
 
-# In another terminal, run the client tests
+# In another terminal, run the demo script
+python demo.py
+```
+
+This runs a complete, user-friendly demo showing the full poll application workflow with clear output and emojis.
+
+### Option 2: Built-in Client Tests
+```bash
+# Make sure the server is running
+uvicorn main:app --reload
+
+# In another terminal, run the comprehensive tests
 python client.py
 ```
 
-This will execute a series of tests demonstrating:
+This executes a series of tests demonstrating:
 - User registration and login
 - Poll creation with authentication
 - Poll retrieval with pagination
 - Error handling for various scenarios
 
 The test output will show structured JSON responses with success/error information and detailed logging.
+
+### Option 3: Copy and Run the Example Code
+You can also copy the example code from the "Quick Start Example" section above into your own Python script and run it directly.
 
 ## Development and Contributing
 
